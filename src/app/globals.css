@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 97%; /* Lighter cool gray */
+    --foreground: 224 10% 10%; /* Dark gray */
+    --card: 0 0% 100%;
+    --card-foreground: 224 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 10% 10%;
+    --primary: 45 100% 45%; /* Sri Lanka Gold */
+    --primary-foreground: 224 10% 10%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 224 10% 20%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 10% 40%;
+    --accent: 25 95% 53%; /* Sri Lanka Orange */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 45 100% 45%;
+    --radius: 0.8rem;
+  }
+
+  .dark {
+    --background: 224 10% 10%;
+    --foreground: 210 20% 98%;
+    --card: 224 10% 15%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 10% 15%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 45 100% 45%;
+    --primary-foreground: 224 10% 10%;
+    --secondary: 220 10% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 10% 20%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 10% 25%;
+    --input: 220 10% 25%;
+    --ring: 45 100% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
