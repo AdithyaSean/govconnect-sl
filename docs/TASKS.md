@@ -68,6 +68,7 @@ Submission Guidelines:
 - Each user works only in assigned directories.
 - Keep PRs small; link to design doc in top comment.
 - Include TODO comments referencing future enhancements from PLAN.md sections.
+- Update `CHANGELOG.md` with a dated entry summarizing each delivered artifact (Docs/Code Stubs) before requesting review; reference originating doc sections (e.g., PLAN §2.1, prompt-registry.md) and categorize changes.
 
 Review Checklist (applies to every deliverable):
 - [ ] Contains Overview (in file header JSDoc)

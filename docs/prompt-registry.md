@@ -68,3 +68,8 @@ Open Questions:
 - Need per-locale variant at prototype? (English only now.)
 - Storage for outputSchema definitions: embed vs separate collection?
 - Should we store token usage snapshot per prompt invocation?
+
+Consistency Notes:
+1. Standardized Keys: Use `chat`, `suggestServices`, `summarizeServiceInfo`, `automation.fillForm` (avoid variants like `chatFlow` in diagrams/code). Sequence diagrams will be updated accordingly in the next diagram revision pass.
+2. ER Diagram Gap: Current ER diagram omits the `metadata` object field shown here; slated for inclusion when checkpoint collection is also added (see PLAN.md section 5 update).
+3. Automation Prompt Separation: If future differentiation needed, introduce `automation.externalSubmission` rather than overloading `automation.fillForm`.

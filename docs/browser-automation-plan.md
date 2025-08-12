@@ -9,7 +9,7 @@ Assumptions:
 
 Chosen Project:
 - Repo: https://github.com/browser-use/browser-use
-- Pinned Commit: <commit-hash-placeholder> (freeze for reproducibility)
+- Pinned Commit: <commit-hash-placeholder>  // TODO: Set explicit commit SHA before first executable prototype (Week 7–8 per PLAN). Leaving placeholder avoids false reproducibility claim.
 
 Prompt Construction Spec:
 Input sources:
@@ -56,7 +56,7 @@ Risks & Fallbacks:
 | Rate limiting | Run aborted | Backoff & reschedule (one retry) |
 | Session timeout | Partial submission | Re-login step injection |
 
-Sample Prompt JSON:
+Sample Prompt JSON (expanded fieldMap to reflect full schema fields):
 ```
 {
   "goal": "Submit passport renewal form",
@@ -80,10 +80,14 @@ Sample Prompt JSON:
     "fullName": { "selector":"input[name=fullName]", "type":"text" },
     "nic": { "selector":"input[name=nic]", "type":"text" },
     "dob": { "selector":"input[name=dob]", "type":"date" },
-    "photo": { "selector":"input[name=photo]", "type":"file" }
+    "photo": { "selector":"input[name=photo]", "type":"file" },
+    "appointmentDate": { "selector":"input[name=appointmentDate]", "type":"date" },
+    "urgency": { "selector":"select[name=urgency]", "type":"select" }
   }
 }
 ```
+
+Naming Consistency: Prompt registry uses key `chat` (not `chatFlow`). All sequence diagrams and code should normalize to `chat`, `suggestServices`, `summarizeServiceInfo`, `automation.fillForm` to avoid drift. Future automation-specific execution flows may introduce a separate `automation.externalSubmission` key if needed.
 
 Open Questions:
 - Need login flow now or postpone? (Not in prototype.)

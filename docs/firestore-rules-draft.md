@@ -19,6 +19,7 @@ Collections & Access Matrix (R=read, W=write, A=admin elevated):
 | agentRuns        | R (own)         | R (assigned)             | R/W   |
 | auditLogs        | R (filtered own)| R (limited fields)       | R/W   |
 | promptTemplates  | R               | R                        | R/W   |
+| checkpoints      | R (own via run) | R (assigned)             | R/W   |
 ```
 
 Status Transition Constraints:
@@ -84,6 +85,17 @@ Helper Functions:
 function hasRole(r) { return r in request.auth.token.roles; }
 function hasRoleAny(arr) { return arr.exists(r => r in request.auth.token.roles); }
 function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
+
+Checkpoints (Draft):
+```
+match /checkpoints/{id} {
+  allow read: if hasRoleAny(['worker','admin']) || (isOwner(resource.data.actorUserId));
+  allow update: if hasRoleAny(['worker','admin']); // resolution actions only
+  allow create: if request.auth != null; // typically via server action
+}
+```
+
+Status Transition Enforcement: A future client/server-side validator (`validators.ts`) will enforce the Application.status graph before writes; rules may later inline allowed transitions using a map literal for defense-in-depth.
 ```
 
 Open Questions:

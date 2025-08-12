@@ -6,6 +6,8 @@ Assumptions:
 - Checkpoints stored either embedded in agentRuns or separate collection `checkpoints` (option chosen: separate for query efficiency).
 - Each checkpoint references agentRunId + applicationId (optional).
 
+Alignment Update: PLAN.md now explicitly lists `checkpoints` as a new collection (Data Model Additions). The ER diagram will be revised to include this collection in the next modeling pass.
+
 Checkpoint Schema:
 ```
 Checkpoint {
@@ -35,7 +37,8 @@ AgentCheckpointExpire, ResumeAgentRun, AutomationComplete, CreatePayment,
 CreateNotification, SupportTicketCreate, SupportTicketReply, SupportTicketClose,
 StartChat, CompleteChat, ChatError, StartSuggestServices, CompleteSuggestServices,
 SuggestServicesError, StartSummarizeServiceInfo, CompleteSummarizeServiceInfo,
-SummarizeServiceInfoError, PromptOutputValidationFailed
+SummarizeServiceInfoError, PromptOutputValidationFailed,
+CompleteApplication // Optional: used in some sequence diagrams; treat as synonym for end-to-end application finalization (manual or automated). Prefer AutomationComplete for automation path.
 ```
 
 Admin Dashboard Checkpoint Queue (ASCII Wireframe):

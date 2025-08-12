@@ -222,6 +222,19 @@ Table(PromptTemplate) {
   deprecated : boolean?
 }
 
+Table(Checkpoint) {
+  +id : string <<PK>>
+  runId : string <<FK>> (AgentRun.id)
+  applicationId : string <<FK>> (Application.id)?
+  type : string (captcha|dataClarification|manualApproval)
+  state : string (created|pending|resolved|expired|canceled)
+  createdAt : Timestamp
+  expiresAt : Timestamp?
+  resolvedAt : Timestamp?
+  payload : string? (json)
+  resolutionActorId : string? (User.id)
+}
+
 ' -------------------- Relationships --------------------
 User "1" -- "0..*" Application : submits
 User "1" -- "0..*" Payment : makes
@@ -250,6 +263,8 @@ SupportTicket ..> SupportTicketStatus : status
 AgentRun "0..*" -- "0..1" User : belongs to
 AuditLog "0..*" -- "0..1" User : actor (optional)
 Application "1" -- "0..*" AgentRun : flow context
+AgentRun "1" -- "0..*" Checkpoint : may pause via >
+Application "1" -- "0..*" Checkpoint : associated >
 PromptTemplate .. Service : optional usage >
 
 ' Indirect / natural key links (dotted)

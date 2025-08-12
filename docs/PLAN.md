@@ -92,11 +92,14 @@ Validation Method: Internal review checklist (in TASKS.md) + UML diagram consist
 ## 5. Data Model Additions
 New collections / fields (aligned with ER diagram update):
 * agentRuns
+* checkpoints (separate collection for HITL checkpoints; previously implicit — now explicit to match hitl-checkpoints.md)
 * auditLogs
-* promptTemplates
+* promptTemplates (future may add metadata: { maxTokens, outputSchemaKey })
 * (optional) automationJobs (if separated from agentRuns for browser tasks)
 * applications: add timeline[] (array of { at, event, meta }) for quick UI rendering.
 * users: preferredLocale, roles[] (multi-role for future granularity).
+
+Consistency Note: ER diagram update pending to add Checkpoint table & relationships (AgentRun 1..* Checkpoint, Application 1..* Checkpoint). PromptTemplate metadata intentionally deferred; will be integrated when guardrails are enforced (PLAN §3.1).
 
 ## 6. Security & Compliance
 * Expand Firestore rules with role claim injection (custom claims) & field-level validation (e.g., status transitions whitelist).

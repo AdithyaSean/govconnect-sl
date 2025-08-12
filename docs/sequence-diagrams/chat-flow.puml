@@ -19,7 +19,7 @@ activate UI
 UI -> UI: append user message to state
 UI -> Action: askGemini({history,newMessage})
 activate Action
-Action -> PT: fetch template key=chatFlow, locale
+Action -> PT: fetch template key=chat, locale  ' key aligns with prompt-registry.md (avoid chatFlow key drift)
 PT --> Action: {template,version}
 Action -> AR: create agentRuns {flow:chat, status:running, tokensIn:0}
 AR --> Action: runId

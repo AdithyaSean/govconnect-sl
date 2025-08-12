@@ -1,7 +1,7 @@
 @startuml application_submission_flow
 title Application Submission Flow (Passport Renewal Example)
 ' =====================================================================
-' Based on passport-renewal-service.tsx multi-step form
+' Based on passport-renewal schema three-step form (personal, documents, appointment)
 ' =====================================================================
 actor User
 actor Admin as "Worker/Admin" #DDDDDD
@@ -15,17 +15,17 @@ participant AUD as "auditLogs collection"
 User -> UI: Interact with dynamic steps (schema-driven)
 UI -> UI: validateStep(schema)
 
-== Document Upload (Step 3) ==
+== Documents (Step 2) ==
 User -> UI: Select file
 UI -> UI: FileReader readAsDataURL
 UI -> UI: onUploadComplete(base64)
 UI -> UI: store in uploadedFiles
 
-== Appointment (Step 4) ==
+== Appointment (Step 3) ==
 User -> UI: Pick date & time
 UI -> UI: compute appointmentDateTime
 
-== Submit (Step 5) ==
+== Submit (After Step 3) ==
 User -> UI: Submit form(handleSubmit)
 activate UI
 UI -> Auth: get user
@@ -66,6 +66,10 @@ note over AR
  3. Emit checkpoints on captcha / uncertainty
  4. Return normalized submission receipt
 end note
+note bottom
+ Standardized prompt keys: chat, suggestServices, summarizeServiceInfo, automation.fillForm.
+ Checkpoints stored in separate `checkpoints` collection (see PLAN.md / HITL doc).
+end note
 AR -> UI: status update (paused - needs captcha)
 UI -> Admin: Show HITL checkpoint (captcha required)
 Admin -> UI: Provide captcha solution
@@ -74,5 +78,5 @@ AR --> UI: ack
 AR -> UI: status update (completed)
 UI -> FS: update application {status:Completed, timeline += AutomationCompleted}
 FS --> UI: ack
-UI -> AUD: add auditLogs {action:CompleteApplication, entityId:appId}
+UI -> AUD: add auditLogs {action:AutomationComplete, entityId:appId} ' standardized; CompleteApplication may be emitted for manual completion flows.
 @enduml
