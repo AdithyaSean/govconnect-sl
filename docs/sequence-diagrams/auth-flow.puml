@@ -1,0 +1,48 @@
+@startuml auth_flow
+title User Authentication Flow (useAuth lifecycle)
+' =====================================================================
+' User Authentication (useAuth hook lifecycle)
+' =====================================================================
+actor Browser as B
+participant "useAuth Hook" as Hook
+participant "Firebase Auth SDK" as Auth
+participant "Firestore" as FS
+
+== Initial Load ==
+B -> Hook: Mount component using useAuth()
+activate Hook
+Hook -> Auth: onAuthStateChanged(listener)
+Auth --> Hook: current user (firebaseUser?)
+alt firebaseUser exists
+  Hook -> FS: getDoc(users/{uid})
+  FS --> Hook: userDoc (exists?)
+  alt userDoc exists
+    Hook -> Hook: setUser({...})
+  else userDoc missing
+    Hook -> Hook: setUser(null)
+    Hook -> B: console.warn(...)
+  end
+else no user
+  Hook -> Hook: setUser(null)
+end
+Hook -> Hook: setLoading(false)
+deactivate Hook
+
+== Manual Refetch (refetch) ==
+B -> Hook: refetch()
+activate Hook
+Hook -> Auth: currentUser = auth.currentUser
+alt currentUser exists
+  Hook -> FS: getDoc(users/{uid})
+  FS --> Hook: userDoc / error
+  alt exists
+    Hook -> Hook: setUser({...})
+  else missing or error
+    Hook -> Hook: setUser(null)
+  end
+else none
+  Hook -> Hook: setUser(null)
+end
+Hook -> Hook: setLoading(false)
+deactivate Hook
+@enduml

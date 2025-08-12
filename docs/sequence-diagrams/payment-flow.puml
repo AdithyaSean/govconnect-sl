@@ -1,0 +1,45 @@
+@startuml payment_flow
+title Payment Processing Flow (Implemented Client-Side)
+' =====================================================================
+' Based on src/app/payment/page.tsx logic
+' =====================================================================
+actor User
+participant UI as "PaymentPage (React)"
+participant Auth as "useAuth()"
+participant FS as "Firestore"
+
+User -> UI: Open /payment?service=&amount=&ref=
+UI -> Auth: get user
+Auth --> UI: user{id}
+User -> UI: Submit payment form(handlePayment)
+activate UI
+UI -> UI: validate(ref && user)
+alt ref or user missing
+  UI -> User: Toast error (missing reference)
+  deactivate UI
+  destroy UI
+else proceed
+  UI -> UI: setIsProcessing(true)
+  alt ref length == 20 (likely application id)
+    UI -> FS: update applications/{ref} status=In Progress
+    FS --> UI: ack
+  else no app update
+  end
+  UI -> FS: add payments {userId, service, amount, status:Success, applicationRef:ref}
+  FS --> UI: paymentDocRef(id)
+  UI -> FS: add notifications {title:Payment Successful, href:/receipt/{id}}
+  FS --> UI: ack
+  UI -> UI: setShowSuccessDialog(true)
+  UI -> User: Success dialog (View Receipt, Dashboard)
+  UI -> UI: setIsProcessing(false)
+  deactivate UI
+end
+== Error Path ==
+User -> UI: Submit payment form
+activate UI
+UI -> FS: operations...
+FS --> UI: error
+UI -> User: Toast Payment Failed
+UI -> UI: setIsProcessing(false)
+deactivate UI
+@enduml

@@ -1,0 +1,46 @@
+@startuml chat_flow
+title Chat AI Flow (askGemini)
+' =====================================================================
+' Chat AI Flow (askGemini)
+' =====================================================================
+actor User
+participant Browser as FE
+participant "ChatInterface" as UI
+participant "askGemini() server action" as Action
+participant "Genkit Flow chatFlow" as Flow
+participant "Google Gemini Model" as LLM
+
+User -> FE: Type message & submit
+FE -> UI: handleSubmit(event)
+activate UI
+UI -> UI: append user message to state
+UI -> Action: askGemini({history,newMessage})
+activate Action
+Action -> Flow: chatFlow(input)
+activate Flow
+Flow -> LLM: generate(prompt, history, systemInstruction)
+activate LLM
+alt Success
+	LLM --> Flow: response(text)
+	deactivate LLM
+	Flow --> Action: ChatOutput (text)
+	deactivate Flow
+	Action --> UI: assistantResponse string
+	deactivate Action
+	UI -> UI: append assistant message
+	UI --> FE: re-render (updated transcript)
+	deactivate UI
+	FE --> User: Updated chat transcript
+else Error
+	LLM --> Flow: error
+	deactivate LLM
+	Flow --> Action: error
+	deactivate Flow
+	Action --> UI: error
+	deactivate Action
+	UI -> UI: append fallback error message
+	UI --> FE: re-render (with error)
+	deactivate UI
+	FE --> User: Error feedback
+end
+@enduml

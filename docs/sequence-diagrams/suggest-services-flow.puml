@@ -1,0 +1,43 @@
+@startuml suggest_services_flow
+title Service Suggestion Flow (suggestServices)
+' =====================================================================
+' Service Suggestion AI Flow (suggestServices)
+' =====================================================================
+actor User
+participant FE as "Frontend Component"
+participant "suggestServices() server" as Svc
+participant "Genkit Flow suggestServicesFlow" as Flow
+participant "Prompt (suggestServicesPrompt)" as Prompt
+participant LLM as "Google Gemini"
+
+User -> FE: Enter query
+FE -> Svc: suggestServices(query)
+activate Svc
+Svc -> Flow: suggestServicesFlow(query)
+activate Flow
+Flow -> Prompt: invoke with input
+activate Prompt
+Prompt -> LLM: prompt(template+query)
+activate LLM
+alt Success
+	LLM --> Prompt: list of service names
+	deactivate LLM
+	Prompt --> Flow: output[]
+	deactivate Prompt
+	Flow --> Svc: string[]
+	deactivate Flow
+	Svc --> FE: suggestions[]
+	deactivate Svc
+	FE --> User: Display suggested services
+else Error
+	LLM --> Prompt: error
+	deactivate LLM
+	Prompt --> Flow: error
+	deactivate Prompt
+	Flow --> Svc: error
+	deactivate Flow
+	Svc --> FE: error
+	deactivate Svc
+	FE -> User: Fallback (No suggestions)
+end
+@enduml

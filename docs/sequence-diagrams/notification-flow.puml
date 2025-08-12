@@ -1,0 +1,38 @@
+@startuml notification_flow
+title Notification Creation & Delivery
+' =====================================================================
+' Sources: payment/page.tsx, worker application & support pages
+' =====================================================================
+actor User
+actor Worker
+participant UI as "Triggering Component"
+participant FS as "Firestore"
+participant Notify as "notifications collection"
+participant Dest as "User Dashboard / Bell"
+
+== Payment Success Path ==
+User -> UI: Complete payment
+UI -> FS: add notifications {userId,title:"Payment Successful",href:/receipt/{id},read:false}
+FS --> UI: ack
+UI -> Dest: (User later fetches notifications)
+
+== Worker Reply Path ==
+Worker -> UI: Send support reply
+UI -> FS: add notifications {userId,title:"Reply to your support ticket",href:/support}
+FS --> UI: ack
+
+== Worker Closes Ticket ==
+Worker -> UI: Close ticket
+UI -> FS: add notifications {userId,title:"Support ticket closed",href:/support}
+FS --> UI: ack
+
+== Worker Updates Application ==
+Worker -> UI: Update application status (e.g., Approved)
+UI -> FS: add notifications {userId,title:"Application Updated",href:/my-applications}
+FS --> UI: ack
+
+== User Fetch Display (implicit) ==
+Dest -> FS: query notifications where userId
+FS --> Dest: notification list
+Dest -> User: show unread/read items
+@enduml

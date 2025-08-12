@@ -1,0 +1,59 @@
+@startuml support_ticket_flow
+title Support Ticket Lifecycle (User & Worker)
+' =====================================================================
+' Based on support/page.tsx and worker/support/dashboard/page.tsx
+' =====================================================================
+actor User
+actor Worker
+participant UserUI as "SupportPage"
+participant WorkerUI as "WorkerSupportDashboard"
+participant Auth as "useAuth()"
+participant FS as "Firestore"
+participant Notify as "notifications collection"
+
+== User Submits Ticket ==
+User -> UserUI: Fill & submit ticket form
+UserUI -> Auth: get user
+Auth --> UserUI: user{id,nic}
+UserUI -> FS: add supportTickets {status:Open, submittedAt, userNic,userId,reply:""}
+FS --> UserUI: ticketId
+UserUI -> User: Toast success
+
+== Worker Views Tickets ==
+Worker -> WorkerUI: Open dashboard
+WorkerUI -> FS: getDocs(supportTickets)
+FS --> WorkerUI: tickets[]
+WorkerUI -> Worker: Display list
+
+== Worker Replies ==
+Worker -> WorkerUI: Open ticket
+WorkerUI -> FS: update ticket.reply & status=In Progress
+FS --> WorkerUI: ack
+alt ticket has userId
+  WorkerUI -> Notify: add notification {title:Reply..., href:/support}
+  Notify --> WorkerUI: ack
+end
+WorkerUI -> Worker: Reply shown
+
+== User Views Reply ==
+User -> UserUI: Expand ticket accordion
+UserUI -> FS: query supportTickets where userNic
+FS --> UserUI: updated ticket
+UserUI -> User: Show reply
+
+== User Adds Follow-up Reply ==
+User -> UserUI: Type follow-up
+UserUI -> FS: update message (append) status=Open
+FS --> UserUI: ack
+UserUI -> User: Toast sent
+
+== Worker Closes Ticket ==
+Worker -> WorkerUI: Mark Closed
+WorkerUI -> FS: update status=Closed
+FS --> WorkerUI: ack
+alt has userId
+  WorkerUI -> Notify: add notification {title:ticket closed}
+  Notify --> WorkerUI: ack
+end
+WorkerUI -> Worker: Status Closed
+@enduml

@@ -1,0 +1,48 @@
+@startuml application_submission_flow
+title Application Submission Flow (Passport Renewal Example)
+' =====================================================================
+' Based on passport-renewal-service.tsx multi-step form
+' =====================================================================
+actor User
+participant UI as "PassportRenewalService Component"
+participant Auth as "useAuth()"
+participant FS as "Firestore"
+
+== Step Navigation ==
+User -> UI: Interact with steps (1..5)
+UI -> UI: validateStep()
+
+== Document Upload (Step 3) ==
+User -> UI: Select file
+UI -> UI: FileReader readAsDataURL
+UI -> UI: onUploadComplete(base64)
+UI -> UI: store in uploadedFiles
+
+== Appointment (Step 4) ==
+User -> UI: Pick date & time
+UI -> UI: compute appointmentDateTime
+
+== Submit (Step 5) ==
+User -> UI: Submit form(handleSubmit)
+activate UI
+UI -> Auth: get user
+Auth --> UI: user{id,name,nic,email}
+UI -> UI: validateStep()
+alt validation fails or !user
+  UI -> User: Toast error
+  deactivate UI
+else valid
+  UI -> FS: add applications {service,userId,user,status:Pending Payment,documents,details:{...}}
+  FS --> UI: appDocRef(id)
+  UI -> UI: setShowPaymentDialog(true)
+  UI -> User: Dialog (Pay Now / Pay Later)
+  alt User chooses Pay Now
+    User -> UI: Click Pay Now
+    UI -> UI: router.push(/payment?service=...&amount=...&ref=<user?.id>)
+  else Pay Later
+    User -> UI: Click Pay Later
+    UI -> UI: router.push(/my-applications)
+  end
+  deactivate UI
+end
+@enduml
