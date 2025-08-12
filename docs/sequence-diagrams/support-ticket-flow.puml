@@ -10,6 +10,7 @@ participant WorkerUI as "WorkerSupportDashboard"
 participant Auth as "useAuth()"
 participant FS as "Firestore"
 participant Notify as "notifications collection"
+participant AUD as "auditLogs"
 
 == User Submits Ticket ==
 User -> UserUI: Fill & submit ticket form
@@ -17,6 +18,8 @@ UserUI -> Auth: get user
 Auth --> UserUI: user{id,nic}
 UserUI -> FS: add supportTickets {status:Open, submittedAt, userNic,userId,reply:""}
 FS --> UserUI: ticketId
+UserUI -> AUD: add auditLogs {action:SupportTicketCreate, entityId:ticketId}
+AUD --> UserUI: ack
 UserUI -> User: Toast success
 
 == Worker Views Tickets ==
@@ -29,6 +32,8 @@ WorkerUI -> Worker: Display list
 Worker -> WorkerUI: Open ticket
 WorkerUI -> FS: update ticket.reply & status=In Progress
 FS --> WorkerUI: ack
+WorkerUI -> AUD: add auditLogs {action:SupportTicketReply, entityId:ticketId}
+AUD --> WorkerUI: ack
 alt ticket has userId
   WorkerUI -> Notify: add notification {title:Reply..., href:/support}
   Notify --> WorkerUI: ack
@@ -51,6 +56,8 @@ UserUI -> User: Toast sent
 Worker -> WorkerUI: Mark Closed
 WorkerUI -> FS: update status=Closed
 FS --> WorkerUI: ack
+WorkerUI -> AUD: add auditLogs {action:SupportTicketClose, entityId:ticketId}
+AUD --> WorkerUI: ack
 alt has userId
   WorkerUI -> Notify: add notification {title:ticket closed}
   Notify --> WorkerUI: ack

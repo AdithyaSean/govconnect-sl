@@ -4,13 +4,16 @@ title Application Submission Flow (Passport Renewal Example)
 ' Based on passport-renewal-service.tsx multi-step form
 ' =====================================================================
 actor User
-participant UI as "PassportRenewalService Component"
+actor Admin as "Worker/Admin" #DDDDDD
+participant UI as "DynamicApplicationForm"
 participant Auth as "useAuth()"
 participant FS as "Firestore"
+participant AR as "agentRuns collection"
+participant AUD as "auditLogs collection"
 
 == Step Navigation ==
-User -> UI: Interact with steps (1..5)
-UI -> UI: validateStep()
+User -> UI: Interact with dynamic steps (schema-driven)
+UI -> UI: validateStep(schema)
 
 == Document Upload (Step 3) ==
 User -> UI: Select file
@@ -32,8 +35,10 @@ alt validation fails or !user
   UI -> User: Toast error
   deactivate UI
 else valid
-  UI -> FS: add applications {service,userId,user,status:Pending Payment,documents,details:{...}}
+  UI -> FS: add applications {service,userId,user,status:Pending Payment,details,documents,timeline:[Submitted]}
   FS --> UI: appDocRef(id)
+  UI -> AUD: add auditLogs {action:CreateApplication, entityId:appId}
+  AUD --> UI: ack
   UI -> UI: setShowPaymentDialog(true)
   UI -> User: Dialog (Pay Now / Pay Later)
   alt User chooses Pay Now
@@ -45,4 +50,29 @@ else valid
   end
   deactivate UI
 end
+
+== Optional Agent Assisted Automation ==
+User -> UI: Request automated external submission
+UI -> FS: update application {status:In Progress, timeline += AutomationRequested}
+FS --> UI: ack
+UI -> AR: add agentRuns {flow:externalSubmission, status:pending, applicationId}
+AR --> UI: runId
+UI -> AUD: add auditLogs {action:StartAgentRun, entityId:runId}
+... Agent Worker (not shown) processes ...
+note over AR
+ Planned integration with browser-use project:
+ 1. Generate structured prompt (service schema + user profile snapshot)
+ 2. Launch headless navigation & form fill
+ 3. Emit checkpoints on captcha / uncertainty
+ 4. Return normalized submission receipt
+end note
+AR -> UI: status update (paused - needs captcha)
+UI -> Admin: Show HITL checkpoint (captcha required)
+Admin -> UI: Provide captcha solution
+UI -> AR: update agentRuns {status:running}
+AR --> UI: ack
+AR -> UI: status update (completed)
+UI -> FS: update application {status:Completed, timeline += AutomationCompleted}
+FS --> UI: ack
+UI -> AUD: add auditLogs {action:CompleteApplication, entityId:appId}
 @enduml

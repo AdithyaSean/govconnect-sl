@@ -6,14 +6,23 @@ title Service Suggestion Flow (suggestServices)
 actor User
 participant FE as "Frontend Component"
 participant "suggestServices() server" as Svc
+participant PT as "promptTemplates"
 participant "Genkit Flow suggestServicesFlow" as Flow
 participant "Prompt (suggestServicesPrompt)" as Prompt
+participant AR as "agentRuns"
+participant AUD as "auditLogs"
 participant LLM as "Google Gemini"
 
 User -> FE: Enter query
 FE -> Svc: suggestServices(query)
 activate Svc
-Svc -> Flow: suggestServicesFlow(query)
+Svc -> PT: fetch template key=suggestServices locale
+PT --> Svc: {template,version}
+Svc -> AR: create agentRuns {flow:suggestServices,status:running}
+AR --> Svc: runId
+Svc -> AUD: add auditLogs {action:StartSuggestServices, entityId:runId}
+AUD --> Svc: ack
+Svc -> Flow: suggestServicesFlow(query, templateVersion)
 activate Flow
 Flow -> Prompt: invoke with input
 activate Prompt
@@ -25,6 +34,10 @@ alt Success
 	Prompt --> Flow: output[]
 	deactivate Prompt
 	Flow --> Svc: string[]
+	Svc -> AR: update agentRuns {status:completed}
+	AR --> Svc: ack
+	Svc -> AUD: add auditLogs {action:CompleteSuggestServices, entityId:runId}
+	AUD --> Svc: ack
 	deactivate Flow
 	Svc --> FE: suggestions[]
 	deactivate Svc
@@ -35,6 +48,10 @@ else Error
 	Prompt --> Flow: error
 	deactivate Prompt
 	Flow --> Svc: error
+	Svc -> AR: update agentRuns {status:error}
+	AR --> Svc: ack
+	Svc -> AUD: add auditLogs {action:SuggestServicesError, entityId:runId}
+	AUD --> Svc: ack
 	deactivate Flow
 	Svc --> FE: error
 	deactivate Svc

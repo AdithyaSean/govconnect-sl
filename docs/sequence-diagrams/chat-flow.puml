@@ -8,6 +8,9 @@ participant Browser as FE
 participant "ChatInterface" as UI
 participant "askGemini() server action" as Action
 participant "Genkit Flow chatFlow" as Flow
+participant PT as "promptTemplates"
+participant AR as "agentRuns"
+participant AUD as "auditLogs"
 participant "Google Gemini Model" as LLM
 
 User -> FE: Type message & submit
@@ -16,15 +19,25 @@ activate UI
 UI -> UI: append user message to state
 UI -> Action: askGemini({history,newMessage})
 activate Action
-Action -> Flow: chatFlow(input)
+Action -> PT: fetch template key=chatFlow, locale
+PT --> Action: {template,version}
+Action -> AR: create agentRuns {flow:chat, status:running, tokensIn:0}
+AR --> Action: runId
+Action -> AUD: add auditLogs {action:StartChat, entityId:runId}
+AUD --> Action: ack
+Action -> Flow: chatFlow(input, templateVersion)
 activate Flow
 Flow -> LLM: generate(prompt, history, systemInstruction)
 activate LLM
 alt Success
 	LLM --> Flow: response(text)
 	deactivate LLM
-	Flow --> Action: ChatOutput (text)
+	Flow --> Action: ChatOutput (text, usage)
 	deactivate Flow
+	Action -> AR: update agentRuns {status:completed, tokensOut:usage.out}
+	AR --> Action: ack
+	Action -> AUD: add auditLogs {action:CompleteChat, entityId:runId}
+	AUD --> Action: ack
 	Action --> UI: assistantResponse string
 	deactivate Action
 	UI -> UI: append assistant message
@@ -36,6 +49,10 @@ else Error
 	deactivate LLM
 	Flow --> Action: error
 	deactivate Flow
+	Action -> AR: update agentRuns {status:error}
+	AR --> Action: ack
+	Action -> AUD: add auditLogs {action:ChatError, entityId:runId}
+	AUD --> Action: ack
 	Action --> UI: error
 	deactivate Action
 	UI -> UI: append fallback error message

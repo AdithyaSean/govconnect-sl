@@ -7,6 +7,7 @@ actor Browser as B
 participant "useAuth Hook" as Hook
 participant "Firebase Auth SDK" as Auth
 participant "Firestore" as FS
+participant AUD as "auditLogs"
 
 == Initial Load ==
 B -> Hook: Mount component using useAuth()
@@ -18,9 +19,13 @@ alt firebaseUser exists
   FS --> Hook: userDoc (exists?)
   alt userDoc exists
     Hook -> Hook: setUser({...})
+    Hook -> AUD: add auditLogs {action:AuthUserLoaded, entityId:uid}
+    AUD --> Hook: ack
   else userDoc missing
     Hook -> Hook: setUser(null)
     Hook -> B: console.warn(...)
+    Hook -> AUD: add auditLogs {action:AuthUserMissing, entityId:uid}
+    AUD --> Hook: ack
   end
 else no user
   Hook -> Hook: setUser(null)
@@ -37,8 +42,12 @@ alt currentUser exists
   FS --> Hook: userDoc / error
   alt exists
     Hook -> Hook: setUser({...})
+    Hook -> AUD: add auditLogs {action:AuthRefetchLoaded, entityId:uid}
+    AUD --> Hook: ack
   else missing or error
     Hook -> Hook: setUser(null)
+    Hook -> AUD: add auditLogs {action:AuthRefetchMissing, entityId:uid}
+    AUD --> Hook: ack
   end
 else none
   Hook -> Hook: setUser(null)

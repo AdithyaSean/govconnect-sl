@@ -6,14 +6,23 @@ title Service Info Summarization Flow (summarizeServiceInfo)
 actor User
 participant FE as "Frontend Component"
 participant "summarizeServiceInfo() server" as Svc
+participant PT as "promptTemplates"
 participant "Genkit Flow summarizeServiceInfoFlow" as Flow
 participant "Prompt (summarizeServiceInfoPrompt)" as Prompt
+participant AR as "agentRuns"
+participant AUD as "auditLogs"
 participant LLM as "Google Gemini"
 
 User -> FE: Request summary(serviceName, details)
 FE -> Svc: summarizeServiceInfo({serviceName, serviceDetails})
 activate Svc
-Svc -> Flow: summarizeServiceInfoFlow(input)
+Svc -> PT: fetch template key=summarizeServiceInfo
+PT --> Svc: {template,version}
+Svc -> AR: create agentRuns {flow:summarizeServiceInfo,status:running}
+AR --> Svc: runId
+Svc -> AUD: add auditLogs {action:StartSummarizeServiceInfo, entityId:runId}
+AUD --> Svc: ack
+Svc -> Flow: summarizeServiceInfoFlow(input, templateVersion)
 activate Flow
 Flow -> Prompt: invoke with input
 activate Prompt
@@ -25,6 +34,10 @@ alt Success
 	Prompt --> Flow: output{summary}
 	deactivate Prompt
 	Flow --> Svc: {summary}
+	Svc -> AR: update agentRuns {status:completed}
+	AR --> Svc: ack
+	Svc -> AUD: add auditLogs {action:CompleteSummarizeServiceInfo, entityId:runId}
+	AUD --> Svc: ack
 	deactivate Flow
 	Svc --> FE: summary text
 	deactivate Svc
@@ -35,6 +48,10 @@ else Error
 	Prompt --> Flow: error
 	deactivate Prompt
 	Flow --> Svc: error
+	Svc -> AR: update agentRuns {status:error}
+	AR --> Svc: ack
+	Svc -> AUD: add auditLogs {action:SummarizeServiceInfoError, entityId:runId}
+	AUD --> Svc: ack
 	deactivate Flow
 	Svc --> FE: error
 	deactivate Svc

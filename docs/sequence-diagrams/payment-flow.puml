@@ -7,6 +7,7 @@ actor User
 participant UI as "PaymentPage (React)"
 participant Auth as "useAuth()"
 participant FS as "Firestore"
+participant AUD as "auditLogs"
 
 User -> UI: Open /payment?service=&amount=&ref=
 UI -> Auth: get user
@@ -21,14 +22,20 @@ alt ref or user missing
 else proceed
   UI -> UI: setIsProcessing(true)
   alt ref length == 20 (likely application id)
-    UI -> FS: update applications/{ref} status=In Progress
-    FS --> UI: ack
+    UI -> FS: update applications/{ref} status=In Progress timeline+=PaymentInitiated
+      FS --> UI: ack
   else no app update
   end
   UI -> FS: add payments {userId, service, amount, status:Success, applicationRef:ref}
   FS --> UI: paymentDocRef(id)
+  UI -> AUD: add auditLogs {action:CreatePayment, entityId:paymentId}
+  AUD --> UI: ack
   UI -> FS: add notifications {title:Payment Successful, href:/receipt/{id}}
   FS --> UI: ack
+  alt applicationRef exists
+    UI -> FS: update applications/{ref} timeline+=PaymentSuccess
+    FS --> UI: ack
+  end
   UI -> UI: setShowSuccessDialog(true)
   UI -> User: Success dialog (View Receipt, Dashboard)
   UI -> UI: setIsProcessing(false)

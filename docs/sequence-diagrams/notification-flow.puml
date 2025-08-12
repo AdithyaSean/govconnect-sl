@@ -8,28 +8,37 @@ actor Worker
 participant UI as "Triggering Component"
 participant FS as "Firestore"
 participant Notify as "notifications collection"
+participant AUD as "auditLogs"
 participant Dest as "User Dashboard / Bell"
 
 == Payment Success Path ==
 User -> UI: Complete payment
 UI -> FS: add notifications {userId,title:"Payment Successful",href:/receipt/{id},read:false}
 FS --> UI: ack
+UI -> AUD: add auditLogs {action:CreateNotification, type:Payment}
+AUD --> UI: ack
 UI -> Dest: (User later fetches notifications)
 
 == Worker Reply Path ==
 Worker -> UI: Send support reply
 UI -> FS: add notifications {userId,title:"Reply to your support ticket",href:/support}
 FS --> UI: ack
+UI -> AUD: add auditLogs {action:CreateNotification, type:SupportReply}
+AUD --> UI: ack
 
 == Worker Closes Ticket ==
 Worker -> UI: Close ticket
 UI -> FS: add notifications {userId,title:"Support ticket closed",href:/support}
 FS --> UI: ack
+UI -> AUD: add auditLogs {action:CreateNotification, type:SupportClosed}
+AUD --> UI: ack
 
 == Worker Updates Application ==
 Worker -> UI: Update application status (e.g., Approved)
 UI -> FS: add notifications {userId,title:"Application Updated",href:/my-applications}
 FS --> UI: ack
+UI -> AUD: add auditLogs {action:CreateNotification, type:ApplicationUpdate}
+AUD --> UI: ack
 
 == User Fetch Display (implicit) ==
 Dest -> FS: query notifications where userId

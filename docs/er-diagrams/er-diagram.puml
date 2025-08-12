@@ -83,6 +83,8 @@ Table(User) {
   joined : Timestamp | string
   status : UserStatus
   photoURL : string? (avatar)
+  roles : string[]? (multi-role)
+  preferredLocale : string? (i18n)
 }
 
 Table(Service) {
@@ -109,6 +111,7 @@ Table(Application) {
   workerComment : string?
   appointmentRating : number? (1..5)
   appointmentFeedback : string?
+  timeline : TimelineEvent[]? (embedded)
 }
 
 Table(Payment) {
@@ -178,6 +181,47 @@ class Section <<(V,#DDE8FF)>> {
   list : string[]?
 }
 
+class TimelineEvent <<(V,#DDE8FF)>> {
+  at : Timestamp
+  event : string
+  meta : Map<string,any>?
+}
+
+Table(AgentRun) {
+  +id : string <<PK>>
+  flow : string
+  userId : string? <<FK>> (User.id)
+  inputSummary : string?
+  status : string (pending|running|paused|error|completed)
+  startedAt : Timestamp
+  completedAt : Timestamp?
+  tokensIn : number?
+  tokensOut : number?
+  costEstimate : number?
+}
+
+Table(AuditLog) {
+  +id : string <<PK>>
+  actorType : string (user|system|worker|agent)
+  actorId : string?
+  action : string
+  entityType : string
+  entityId : string
+  before : string? (json)
+  after : string? (json)
+  at : Timestamp
+}
+
+Table(PromptTemplate) {
+  +id : string <<PK>>
+  key : string
+  version : number
+  locale : string
+  template : string
+  createdAt : Timestamp
+  deprecated : boolean?
+}
+
 ' -------------------- Relationships --------------------
 User "1" -- "0..*" Application : submits
 User "1" -- "0..*" Payment : makes
@@ -203,6 +247,11 @@ Fine ..> FineStatus : status
 Vehicle ..> VehicleStatus : status
 SupportTicket ..> SupportTicketStatus : status
 
+AgentRun "0..*" -- "0..1" User : belongs to
+AuditLog "0..*" -- "0..1" User : actor (optional)
+Application "1" -- "0..*" AgentRun : flow context
+PromptTemplate .. Service : optional usage >
+
 ' Indirect / natural key links (dotted)
 User .. Vehicle : nic = nic
 User .. Fine : nic = nic
@@ -224,5 +273,13 @@ note as N1
  for Vehicle/Fine/SupportTicket to enforce referential integrity.
 end note
 N1 .. User
+
+note as N2
+ New entities support observability, governance, and
+ localization of AI prompt content.
+end note
+N2 .. AgentRun
+N2 .. AuditLog
+N2 .. PromptTemplate
 
 @enduml
