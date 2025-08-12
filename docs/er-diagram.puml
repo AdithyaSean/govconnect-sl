@@ -1,0 +1,228 @@
+@startuml govconnect_er_diagram
+' =====================================================================
+' ER Diagram for govconnect-sl (auto-generated from src/lib/types.ts)
+' =====================================================================
+' Legend:
+'  <<PK>> primary key    <<FK>> foreign key (dashed = optional FK)
+'  (snapshot) denormalized copy   ? optional / nullable
+'  Dashed associations indicate indirect (non-FK) linkage via natural key (nic)
+' =====================================================================
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Inter"
+skinparam ArrowColor #555555
+skinparam class {
+  BackgroundColor #FFF9F6
+  BorderColor #CC8877
+}
+
+!define Table(x) class x << (T,#F9D4C4) >>
+!define Enum(x) enum x << (E,#E4F1FB) >>
+hide methods
+
+' -------------------- Enumerations --------------------
+Enum(ServiceStatus) {
+  Active
+  "Renewal Due"
+  "Not Applied"
+  Pending
+}
+
+Enum(ServiceStatusVariant) {
+  success
+  warning
+  destructive
+  default
+}
+
+Enum(ApplicationStatus) {
+  Pending
+  Approved
+  Rejected
+  "In Progress"
+  Completed
+  "In Review"
+  "Pending Payment"
+}
+
+Enum(PaymentStatus) {
+  Success
+  Failed
+}
+
+Enum(FineStatus) {
+  Pending
+  Paid
+}
+
+Enum(VehicleStatus) {
+  Active
+  Inactive
+}
+
+Enum(SupportTicketStatus) {
+  Open
+  "In Progress"
+  Closed
+}
+
+Enum(UserStatus) {
+  Active
+  Suspended
+}
+
+' -------------------- Core Entities --------------------
+Table(User) {
+  +id : string <<PK>>
+  nic : string <<U>>
+  name : string
+  email : string
+  role : string
+  joined : Timestamp | string
+  status : UserStatus
+  photoURL : string? (avatar)
+}
+
+Table(Service) {
+  +slug : string <<PK>>
+  title : string
+  description : string
+  status : ServiceStatus
+  statusVariant : ServiceStatusVariant
+  icon : string
+  actions : ServiceAction[] (embedded)
+  content.longDescription : string
+  content.sections[] : Section (embedded)
+}
+
+Table(Application) {
+  +id : string <<PK>>
+  userId : string <<FK>> (User.id)?
+  user : string (snapshot)
+  service : string <<FK>> (Service.slug)
+  status : ApplicationStatus
+  submitted : Timestamp | string
+  documents : Map<string,string>? (storage refs)
+  details : Map<string,any>? (polymorphic)
+  workerComment : string?
+  appointmentRating : number? (1..5)
+  appointmentFeedback : string?
+}
+
+Table(Payment) {
+  +id : string <<PK>>
+  userId : string <<FK>> (User.id)
+  service : string <<FK>> (Service.slug)
+  applicationRef : string <<FK>> (Application.id)?
+  date : Timestamp | string
+  amount : string
+  status : PaymentStatus
+}
+
+Table(Vehicle) {
+  +id : string <<PK>>
+  nic : string (User.nic)
+  type : string
+  licensePlate : string
+  registrationDate : string
+  chassisNumber : string
+  status : VehicleStatus
+  insuranceExpiry : string
+  emissionTestExpiry : string
+}
+
+Table(Fine) {
+  +id : string <<PK>>
+  nic : string (User.nic)
+  type : string
+  issuedDate : string
+  amount : string
+  dueDate : string
+  status : FineStatus
+}
+
+Table(SupportTicket) {
+  +id : string <<PK>>
+  userId : string <<FK>> (User.id)?
+  userNic : string (User.nic)
+  name : string (snapshot)
+  email : string (snapshot)
+  subject : string
+  message : string
+  status : SupportTicketStatus
+  submittedAt : Timestamp | string
+  reply : string
+}
+
+Table(Notification) {
+  +id : string <<PK>>
+  userId : string <<FK>> (User.id)
+  title : string
+  description : string
+  href : string
+  icon : string
+  read : boolean
+  createdAt : Timestamp
+}
+
+' -------------------- Embedded Value Objects --------------------
+class ServiceAction <<(V,#DDE8FF)>> {
+  label : string
+  variant : string
+}
+class Section <<(V,#DDE8FF)>> {
+  title : string
+  content : string
+  list : string[]?
+}
+
+' -------------------- Relationships --------------------
+User "1" -- "0..*" Application : submits
+User "1" -- "0..*" Payment : makes
+User "1" -- "0..*" SupportTicket : opens
+User "1" -- "0..*" Notification : receives
+Service "1" -- "0..*" Application : referenced by
+Service "1" -- "0..*" Payment : paid via
+Application "1" -- "0..*" Payment : payment records
+User "1" -- "0..*" Vehicle : owns (nic)
+User "1" -- "0..*" Fine : incurs (nic)
+
+' Composition (embedded value objects)
+Service *-- "0..*" ServiceAction : defines >
+Service *-- "0..*" Section : organizes >
+
+' -------------------- Enumeration Type Links --------------------
+User ..> UserStatus : status
+Service ..> ServiceStatus : status
+Service ..> ServiceStatusVariant : statusVariant
+Application ..> ApplicationStatus : status
+Payment ..> PaymentStatus : status
+Fine ..> FineStatus : status
+Vehicle ..> VehicleStatus : status
+SupportTicket ..> SupportTicketStatus : status
+
+' Indirect / natural key links (dotted)
+User .. Vehicle : nic = nic
+User .. Fine : nic = nic
+User .. SupportTicket : nic = userNic
+
+' -------------------- Notes --------------------
+note top of Application
+ documents: typically file storage references
+ details: polymorphic per service type
+end note
+
+note bottom of Vehicle
+ licensePlate assumed unique externally
+ ownership via User.nic (not strict FK)
+end note
+
+note as N1
+ Consider normalizing natural key (nic) to surrogate FK
+ for Vehicle/Fine/SupportTicket to enforce referential integrity.
+end note
+N1 .. User
+
+@enduml
